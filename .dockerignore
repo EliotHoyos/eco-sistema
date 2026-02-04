@@ -1,0 +1,37 @@
+# Ignorar archivos innecesarios al construir la imagen Docker
+
+# Directorios de build
+target/
+!target/*.jar
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Uploads (se manejan con volúmenes)
+uploads/
+
+# Documentación
+*.md
+REFACTORING_VALIDACION_IMAGENES.md
+RESUMEN_REFACTORIZACION.md

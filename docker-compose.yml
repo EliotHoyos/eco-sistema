@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Base de datos MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: eco-sistema-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: eco_sistema
+      MYSQL_USER: eco_user
+      MYSQL_PASSWORD: eco_password
+    ports:
+      - "3307:3306"  # Puerto 3307 en tu máquina -> 3306 en el contenedor
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Script de inicialización
+    networks:
+      - eco-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicación Spring Boot
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eco-sistema-app
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      # Configuración de la base de datos
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/eco_sistema?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+
+      # Configuración JPA
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+
+      # Configuración de uploads
+      FILE_UPLOAD_DIR: /app/uploads
+
+      # Tamaño máximo de archivos
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 10MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 10MB
+    volumes:
+      - ./uploads:/app/uploads  # Persistir archivos subidos
+    depends_on:
+      mysql:
+        condition: service_healthy  # Esperar a que MySQL esté listo
+    networks:
+      - eco-network
+
+  # phpMyAdmin (opcional, para gestionar la BD visualmente)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: eco-sistema-phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD:
+    depends_on:
+      - mysql
+    networks:
+      - eco-network
+
+# Volúmenes para persistir datos
+volumes:
+  mysql_data:
+    driver: local
+
+# Red para comunicación entre contenedores
+networks:
+  eco-network:
+    driver: bridge
